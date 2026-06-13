@@ -2,11 +2,11 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
 const express = require('express');
 
-// 1. Web server for Render
+// 1. Web server for Render to keep the bot alive
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.get('/', (req, res) => res.send('Free AI Chat Bot is online!'));
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+app.get('/', (req, res) => res.send('Fast AI Bot is running smoothly!'));
+app.listen(PORT, () => console.log(`Web server listening on port ${PORT}`));
 
 // 2. Discord Bot Setup
 const client = new Client({ 
@@ -18,72 +18,56 @@ const client = new Client({
 });
 
 client.once('ready', () => {
-    console.log(`${client.user.tag} is online and ready to chat!`);
+    console.log(`Success! ${client.user.tag} is online and super fast.`);
 });
 
-// Helper function to talk to DuckDuckGo's Free AI (Llama 3 / Mixtral)
-async function getFreeAIResponse(userMessage) {
+// Helper function to hit the ultra-fast direct AI text engine
+async function getFastAIResponse(userMessage) {
     try {
-        // Step A: Fetch the required token from DDG
-        const tokenRes = await axios.get('https://duckduckgo.com/duckchat/v1/status', {
-            headers: { 'x-vqd-accept': '1' }
-        });
-        const vqdToken = tokenRes.headers['x-vqd-token'];
-
-        // Step B: Send the chat history/prompt
-        const chatRes = await axios.post('https://duckduckgo.com/duckchat/v1/chat', {
-            model: "meta-llama/Meta-Llama-3-70B-Instruct-Turbo", // Fast, free open model
+        const response = await axios.post('https://text.pollinations.ai/', {
             messages: [
-                { role: "system", content: "You are a casual, friendly, and funny Discord member. Keep answers short, talk like a normal person hanging out in chat, and use modern text slang." },
+                { role: "system", content: "You are a casual, friendly, and funny Discord community member. Speak like a normal teenager hanging out in chat, keep answers relatively short, and use clean modern text slang." },
                 { role: "user", content: userMessage }
-            ]
+            ],
+            model: "openai" // Switches to a high-speed text model
         }, {
-            headers: {
-                'x-vqd-token': vqdToken,
-                'Content-Type': 'application/json',
-                'Accept': 'text/event-stream'
-            }
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 5000 // Force cuts off if it ever takes over 5 seconds
         });
 
-        // Step C: Clean up the stream responses into clean text strings
-        const textLines = chatRes.data.split('\n');
-        let fullReply = '';
-        for (let line of textLines) {
-            if (line.startsWith('data: ')) {
-                const dataStr = line.replace('data: ', '').trim();
-                if (dataStr === '[DONE]') break;
-                try {
-                    const parsed = JSON.parse(dataStr);
-                    if (parsed.message) fullReply += parsed.message;
-                } catch (e) {}
-            }
-        }
-        return fullReply.trim() || "Yo, what's up?";
+        // Pull the text cleanly from the response body data
+        const replyText = response.data?.choices?.[0]?.message?.content;
+        return replyText ? replyText.trim() : "Yo! What's up?";
     } catch (error) {
-        console.error("AI Error:", error);
-        return "My bad, my brain just glitched. Try tagging me again!";
+        console.error("AI Fetch Error:", error.message);
+        return "I'm lagging slightly right now, try hitting me up again in a second!";
     }
 }
 
-// 3. Reply when tagged
+// 3. Listen for tags/mentions in chat
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
+    // Trigger only if the bot is tagged directly
     if (message.mentions.has(client.user) && !message.mentions.everyone) {
         const cleanPrompt = message.content.replace(`<@${client.user.id}>`, '').trim();
         
         if (!cleanPrompt) {
-            return message.reply("Yo! What's up? Mention me and ask me something!");
+            return message.reply("Yo! What's up? Mention me and ask something!");
         }
 
         try {
+            // Instantly start typing indicator to show responsiveness
             await message.channel.sendTyping();
-            const aiResponse = await getFreeAIResponse(cleanPrompt);
             
-            // Limit characters so Discord doesn't crash if it's too long
+            // Get the fast response text
+            const aiResponse = await getFastAIResponse(cleanPrompt);
+            
+            // Make sure the text stays cleanly under Discord's layout limits
             await message.reply(aiResponse.substring(0, 1999));
         } catch (error) {
-            await message.reply("My bad, couldn't process that right now.");
+            console.error("Interaction Error:", error);
+            await message.reply("My bad, couldn't grab that answer right now.");
         }
     }
 });
