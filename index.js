@@ -5,7 +5,7 @@ const express = require('express');
 // 1. Background web server for Railway stability
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.get('/', (req, res) => res.send('Ultra-fast AI Bot is online!'));
+app.get('/', (req, res) => res.send('HuggingFace AI Bot is online!'));
 app.listen(PORT, () => console.log(`Web server listening on port ${PORT}`));
 
 // 2. Discord Bot Setup
@@ -18,31 +18,44 @@ const client = new Client({
 });
 
 client.once('ready', () => {
-    console.log(`${client.user.tag} is online and running at maximum speed.`);
+    console.log(`${client.user.tag} is online and running on Hugging Face servers!`);
 });
 
-// Helper function to hit OpenRouter's universal free routing engine
+// Helper function to hit Hugging Face's stable free API
 async function getFastAIResponse(userMessage) {
     try {
-        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-            model: "openrouter/free", // Routing directly to OpenRouter's free fallback pool
-            messages: [
-                { role: "system", content: "You are a casual, friendly, and funny Discord community member. Speak like a normal teenager hanging out in chat, keep answers short, and use clean modern text slang." },
-                { role: "user", content: userMessage }
-            ]
-        }, {
-            headers: {
-                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            timeout: 10000 // Give it up to 10 seconds to handle heavy queue routing smoothly
-        });
+        // Constructing a robust text prompt structure
+        const systemPrompt = "You are a casual, friendly, and funny Discord community member. Speak like a normal teenager hanging out in chat, keep answers short, and use clean modern text slang.";
+        const fullPrompt = `<s>[INST] ${systemPrompt}\nUser: ${userMessage} [/INST]`;
 
-        const replyText = response.data?.choices?.[0]?.message?.content;
+        // Targeting a highly optimized, permanently free open-source text model
+        const response = await axios.post(
+            'https://api-inference.huggingface.co/models/MistralAI/Mistral-7B-Instruct-v0.3',
+            { 
+                inputs: fullPrompt,
+                parameters: { max_new_tokens: 150, temperature: 0.7 }
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 10000
+            }
+        );
+
+        // Hugging Face returns the full prompt + the generated answer text
+        let replyText = response.data?.[0]?.generated_text || "";
+        
+        // Clean off the system instruction wrapper if it repeats in the output
+        if (replyText.includes('[/INST]')) {
+            replyText = replyText.split('[/INST]')[1];
+        }
+
         return replyText ? replyText.trim() : "Yo! What's up?";
     } catch (error) {
-        console.error("OpenRouter API Error:", error.message);
-        return "I had a quick lag spike, try tagging me one more time!";
+        console.error("Hugging Face API Error:", error.message);
+        return "My bad, my brain just had a minor lag spike. Try again!";
     }
 }
 
