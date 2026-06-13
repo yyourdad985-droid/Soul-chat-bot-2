@@ -21,11 +21,11 @@ client.once('ready', () => {
     console.log(`${client.user.tag} is online and running at maximum speed.`);
 });
 
-// Helper function to hit OpenRouter's free high-speed Llama 3 endpoint
+// Helper function to hit OpenRouter's universal free routing engine
 async function getFastAIResponse(userMessage) {
     try {
         const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-            model: "meta-llama/llama-3-8b-instruct:free", // A 100% free, lightning-fast model
+            model: "openrouter/free", // Routing directly to OpenRouter's free fallback pool
             messages: [
                 { role: "system", content: "You are a casual, friendly, and funny Discord community member. Speak like a normal teenager hanging out in chat, keep answers short, and use clean modern text slang." },
                 { role: "user", content: userMessage }
@@ -35,7 +35,7 @@ async function getFastAIResponse(userMessage) {
                 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
                 'Content-Type': 'application/json'
             },
-            timeout: 7000
+            timeout: 10000 // Give it up to 10 seconds to handle heavy queue routing smoothly
         });
 
         const replyText = response.data?.choices?.[0]?.message?.content;
