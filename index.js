@@ -2,10 +2,10 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
 const express = require('express');
 
-// 1. Web server for Render to keep the bot alive
+// 1. Background web server for Railway stability
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.get('/', (req, res) => res.send('Fast AI Bot is running smoothly!'));
+app.get('/', (req, res) => res.send('Ultra-fast AI Bot is online!'));
 app.listen(PORT, () => console.log(`Web server listening on port ${PORT}`));
 
 // 2. Discord Bot Setup
@@ -18,29 +18,31 @@ const client = new Client({
 });
 
 client.once('ready', () => {
-    console.log(`Success! ${client.user.tag} is online and super fast.`);
+    console.log(`${client.user.tag} is online and running at maximum speed.`);
 });
 
-// Helper function to hit the ultra-fast direct AI text engine
+// Helper function to hit OpenRouter's free high-speed Llama 3 endpoint
 async function getFastAIResponse(userMessage) {
     try {
-        const response = await axios.post('https://text.pollinations.ai/', {
+        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+            model: "meta-llama/llama-3-8b-instruct:free", // A 100% free, lightning-fast model
             messages: [
-                { role: "system", content: "You are a casual, friendly, and funny Discord community member. Speak like a normal teenager hanging out in chat, keep answers relatively short, and use clean modern text slang." },
+                { role: "system", content: "You are a casual, friendly, and funny Discord community member. Speak like a normal teenager hanging out in chat, keep answers short, and use clean modern text slang." },
                 { role: "user", content: userMessage }
-            ],
-            model: "openai" // Switches to a high-speed text model
+            ]
         }, {
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 5000 // Force cuts off if it ever takes over 5 seconds
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            timeout: 7000
         });
 
-        // Pull the text cleanly from the response body data
         const replyText = response.data?.choices?.[0]?.message?.content;
         return replyText ? replyText.trim() : "Yo! What's up?";
     } catch (error) {
-        console.error("AI Fetch Error:", error.message);
-        return "I'm lagging slightly right now, try hitting me up again in a second!";
+        console.error("OpenRouter API Error:", error.message);
+        return "I had a quick lag spike, try tagging me one more time!";
     }
 }
 
@@ -48,7 +50,6 @@ async function getFastAIResponse(userMessage) {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // Trigger only if the bot is tagged directly
     if (message.mentions.has(client.user) && !message.mentions.everyone) {
         const cleanPrompt = message.content.replace(`<@${client.user.id}>`, '').trim();
         
@@ -57,17 +58,12 @@ client.on('messageCreate', async (message) => {
         }
 
         try {
-            // Instantly start typing indicator to show responsiveness
             await message.channel.sendTyping();
-            
-            // Get the fast response text
             const aiResponse = await getFastAIResponse(cleanPrompt);
-            
-            // Make sure the text stays cleanly under Discord's layout limits
             await message.reply(aiResponse.substring(0, 1999));
         } catch (error) {
             console.error("Interaction Error:", error);
-            await message.reply("My bad, couldn't grab that answer right now.");
+            await message.reply("My bad, my code glitched out.");
         }
     }
 });
