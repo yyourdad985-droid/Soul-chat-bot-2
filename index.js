@@ -5,7 +5,7 @@ const express = require('express');
 // 1. Background web server for Railway stability
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.get('/', (req, res) => res.send('HuggingFace AI Bot is online!'));
+app.get('/', (req, res) => res.send('AI Bot is fully online!'));
 app.listen(PORT, () => console.log(`Web server listening on port ${PORT}`));
 
 // 2. Discord Bot Setup
@@ -18,22 +18,16 @@ const client = new Client({
 });
 
 client.once('ready', () => {
-    console.log(`${client.user.tag} is online and running on Hugging Face servers!`);
+    console.log(`Success! ${client.user.tag} is active and processing text chat.`);
 });
 
-// Helper function to hit Hugging Face's stable free API
+// Helper function using an un-gated, ultra-fast model
 async function getFastAIResponse(userMessage) {
     try {
-        // Constructing a robust text prompt structure
-        const systemPrompt = "You are a casual, friendly, and funny Discord community member. Speak like a normal teenager hanging out in chat, keep answers short, and use clean modern text slang.";
-        const fullPrompt = `<s>[INST] ${systemPrompt}\nUser: ${userMessage} [/INST]`;
-
-        // Targeting a highly optimized, permanently free open-source text model
         const response = await axios.post(
-            'https://api-inference.huggingface.co/models/MistralAI/Mistral-7B-Instruct-v0.3',
+            'https://api-inference.huggingface.co/models/Qwen/Qwen2.5-7B-Instruct',
             { 
-                inputs: fullPrompt,
-                parameters: { max_new_tokens: 150, temperature: 0.7 }
+                inputs: `<|im_start|>system\nYou are a casual, friendly, and funny Discord community member. Speak like a normal teenager hanging out in chat, keep answers short, and use clean modern text slang. Do not use markdown headers.<|im_end|>\n<|im_start|>user\n${userMessage}<|im_end|>\n<|im_start|>assistant\n`
             },
             {
                 headers: {
@@ -44,22 +38,21 @@ async function getFastAIResponse(userMessage) {
             }
         );
 
-        // Hugging Face returns the full prompt + the generated answer text
         let replyText = response.data?.[0]?.generated_text || "";
         
-        // Clean off the system instruction wrapper if it repeats in the output
-        if (replyText.includes('[/INST]')) {
-            replyText = replyText.split('[/INST]')[1];
+        // Split out formatting wrappers if they leak into text output
+        if (replyText.includes('<|im_start|>assistant')) {
+            replyText = replyText.split('<|im_start|>assistant')[1];
         }
-
-        return replyText ? replyText.trim() : "Yo! What's up?";
+        
+        return replyText.replace(/<\|im_end\|>/g, '').trim() || "Yo! What's up?";
     } catch (error) {
-        console.error("Hugging Face API Error:", error.message);
+        console.error("AI Server Route Error:", error.message);
         return "My bad, my brain just had a minor lag spike. Try again!";
     }
 }
 
-// 3. Listen for tags/mentions in chat
+// 3. Listen for tags/mentions in chat channels
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
