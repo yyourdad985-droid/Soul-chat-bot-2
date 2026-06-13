@@ -1,1 +1,18 @@
-# Soul-chat-bot-2
+{
+  "name": "ai-chat-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@discordjs/builders": "^1.7.0",
+    "@discordjs/formatters": "^0.3.3",
+    "@discordjs/rest": "^2.2.0",
+    "axios": "^1.6.7",
+    "discord.js": "^14.14.1",
+    "express": "^4.19.2",
+    "lodash.snakecase": "^4.1.1",
+    "tslib": "^2.6.2"
+  }
+}
